@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 extension CompactMap<T> on Iterable<T?> {
@@ -39,22 +40,30 @@ class App extends StatelessWidget {
   }
 }
 
-const url =
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmMGZnowGWA2mhq9SEa3jpvGgWOiKfLM-eug&usqp=CAU";
+class CountDown extends ValueNotifier<int> {
+  late StreamSubscription sub;
+  CountDown({required int from}) : super(from) {
+    sub = Stream.periodic(const Duration(seconds: 1), (v) => from - v)
+        .takeWhile((e) => e >= 0)
+        .listen((event) {
+      value = event;
+    });
+  }
+
+  @override
+  void dispose() {
+    sub.cancel();
+    super.dispose();
+  }
+}
 
 class HomeScreen extends HookWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final future = useMemoized(() {
-      NetworkAssetBundle(Uri.parse(url))
-          .load(url)
-          .then((data) => data.buffer.asUint8List())
-          .then((data) => Image.memory(data));
-    });
-
-    final snapshot = useFuture(future);
+    final counter = useMemoized(() => CountDown(from: 20));
+    final notifier = useListenable(counter);
 
     return Scaffold(
       appBar: AppBar(
@@ -62,8 +71,13 @@ class HomeScreen extends HookWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 100, 20, 0),
-        child: Column(
-          children: <Widget>[snapshot.data].compactMap().toList(),
+        child: Container(
+          alignment: Alignment.center,
+          child: Text(notifier.value.toString(),
+              style: const TextStyle(
+                color: Colors.purple,
+                fontSize: 20,
+              )),
         ),
       ),
     );
