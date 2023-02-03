@@ -18,23 +18,34 @@ class App extends StatelessWidget {
   }
 }
 
-Stream<String> getTime() => Stream.periodic(
-      const Duration(seconds: 1),
-      (_) => DateTime.now().toIso8601String(),
-    );
-
 class HomeScreen extends HookWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final date = useStream(getTime());
+    final controller = useTextEditingController();
+    final text = useState(''); // Value notifier
+
+    useEffect(() {
+      controller.addListener(() {
+        text.value = controller.text;
+      });
+      return null;
+    }, [controller]); // controller as a key
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(date.data ?? 'HomePage'),
+        title: const Text('HomePage'),
       ),
-      body: Container(),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 100, 20, 0),
+        child: Column(children: [
+          TextFormField(
+            controller: controller,
+          ),
+          Text('You typed - ${text.value}'),
+        ]),
+      ),
     );
   }
 }
